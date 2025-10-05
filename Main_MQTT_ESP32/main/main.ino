@@ -4,8 +4,8 @@
 #include <WiFiUdp.h>
 #include <EEPROM.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include "config.h"
-#include "mbedtls/base64.h"
 
 #define EEPROM_SIZE 1
 #define ADDR_RESET 0
@@ -13,28 +13,34 @@
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-int gates_in[4] = {0, 0, 0, 0};
-int gates_out[4] = {0, 0, 0, 0};
-bool status[4] = {0, 0, 0, 0};
+//String SERVER_URL = "http://192.168.93.24:8000";  
 
-unsigned long time_check_health = 5000;
+const int DEVICE_LIMITS = 4;
 
-void gates_status_setup() {
+int gates[DEVICE_LIMITS] = {22, 19, 23, 18};
+int state[DEVICE_LIMITS] = {0, 0, 0, 0};
+
+String HASHCODE = "";
+const char* TOPIC;
+WiFiManager wm;
+
+
+unsigned long TIME_HEALTH_CHECK = 30000;
+
+void gates_setup() {
 	for(int i = 0; i < 4; i++) {
-		pinMode(gates_out[i], OUTPUT);
-		pinMode(gates_in[i], INPUT);
+		pinMode(gates[i], OUTPUT);
 	}
 }
 
 void connect_to_WiFi() {
-	WiFiManager wm;
 	wm.setConnectTimeout(TRY_CONNECT_TIMEOUT);
-	bool reset_connect = EEPROM.read(ADDR_RESET);
-	if(reset_connect != 0 && reset_connect != 1) reset_connect = false;
-	if(reset_connect) {
+	bool is_reset_connect = EEPROM.read(ADDR_RESET);
+	if(is_reset_connect != 0 && is_reset_connect != 1) is_reset_connect = true;
+	if(is_reset_connect) {
 		wm.resetSettings();
-		reset_connect = false;
-		EEPROM.write(ADDR_RESET, reset_connect);
+		is_reset_connect = false;
+		EEPROM.write(ADDR_RESET, is_reset_connect);
 		EEPROM.commit();
 	}
 	if (!wm.autoConnect(WIFI_SSID_AP, WIFI_PASSWORD_AP)) {
@@ -46,61 +52,114 @@ void connect_to_WiFi() {
 	Serial.println(WiFi.localIP());
 }
 
-String get_device_ID() {
-  uint8_t mac[6];
-  WiFi.macAddress(mac);
-  unsigned char output[32];
-  size_t out_len;
+void create_topic() {
+	if (WiFi.status() == WL_CONNECTED) {
+    	String mac = WiFi.macAddress();
+		HTTPClient http;
+		String sever_get_hashcode = SERVER_URL + "/get-hash-code";
+		http.begin(sever_get_hashcode.c_str());
+		http.addHeader("Content-Type", "application/json");
+  // Create JSON object
+    StaticJsonDocument<256> doc;
 
-  mbedtls_base64_encode(output, sizeof(output), &out_len, mac, 6);
-  return String((char*)output);
+    // Add MAC address
+    doc["hashcode"] = WiFi.macAddress();  // e.g. "3C:61:05:2D:E0:78"
+
+    // Create array of states
+    JsonArray states = doc.createNestedArray("states");
+    for (int i = 0; i < DEVICE_LIMITS; i++) {
+      JsonObject state = states.createNestedObject();
+      state["id"] = i;
+      state["value"] = 0;   // replace with your sensor/relay value
+    }
+
+    // Serialize to string
+    String json_data;
+    serializeJson(doc, json_data);
+		Serial.println("JSON Data: " + json_data); // In ra để debug
+
+		int httpResponseCode = http.POST(json_data);
+		
+		if (httpResponseCode > 0) {
+			String response = http.getString();
+			Serial.println("Response code: " + String(httpResponseCode));
+			Serial.println("Response: " + response);
+			StaticJsonDocument<200> doc;
+			DeserializationError error = deserializeJson(doc, response);
+			if (!error) {
+				HASHCODE = doc["hashcode"].as<String>();
+				TOPIC = HASHCODE.c_str();
+
+				Serial.println("Hash code received: " + HASHCODE);
+			} else {
+				Serial.println("JSON parse error");
+			}
+		} else {
+			Serial.print("Error on sending POST: ");
+			Serial.println(httpResponseCode);
+		}
+		http.end();
+  	}
 }
 
-String create_topic() {
-	return get_device_ID();
+void connectToMQTT() {
+  while (!mqttClient.connected()) {
+    Serial.print("Connecting to MQTT... ");
+    if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD)) {
+      	Serial.println(" Connected to MQTT");
+		//mqttClient.subscribe(TOPIC);
+		String device_topic;
+		for(int i = 0; i < DEVICE_LIMITS; i++) {
+			device_topic = String(TOPIC) + "/device_" + String(i) + "/" + "set";
+			mqttClient.subscribe(device_topic.c_str());
+		}
+	} else {
+		Serial.print("Failed, rc=");
+		Serial.print(mqttClient.state());
+		Serial.println(" -> retrying in 2 seconds");
+		delay(2000);
+    }
+  }
 }
-String topic_str = create_topic();
-const char* TOPIC = topic_str.c_str();
 
-// void connectToMQTT() {
-//   while (!mqttClient.connected()) {
-//     Serial.print("Connecting to MQTT... ");
-//     if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD)) {
-//       	Serial.println(" Connected to MQTT");
-// 		mqttClient.subscribe(TOPIC);
-// 	} else {
-// 		Serial.print("Failed, rc=");
-// 		Serial.print(mqttClient.state());
-// 		Serial.println(" -> retrying in 2 seconds");
-// 		delay(2000);
-//     }
-//   }
-// }
+void update_state(int index, int status) {
+	status = constrain(status, 0, 255);
+	analogWrite(gates[index], status);
+	state[index] = status;
+}
 
-// void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-// 	Serial.print("Message arrived on topic: ");
-// 	Serial.println(topic);
-// 	Serial.print("Payload: ");
-// 	for (int i = 0; i < length; i++) {
-// 		Serial.print((char)payload[i]);
-// 	}
-// 	Serial.println();
-// }
+//nghe 
+void on_mqtt_message(char* topic, byte* payload, unsigned int length) {
+	String message;
+	for (unsigned int i = 0; i < length; i++) message += (char)payload[i];
+	//if(message == "") return;
 
-// void mqtt_setup() {
-// 	mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-// 	mqttClient.setCallback(mqtt_callback);	
-// }
+	for(int i = 0; i < DEVICE_LIMITS; i++) {
+		String str_set = String(TOPIC) + "/device_" + String(i) + "/" + "set";
+		if(String(topic) == str_set) {
+			int stt = constrain(message.toInt(), 0, 255);
+			update_state(i, message.toInt());
+			String str_state = String(TOPIC) + "/" + String(i) + "/" + "state";
+			mqttClient.publish(str_state.c_str(), message.c_str());
+			Serial.println(str_state + ": " + message);
+		}
+	}
+}
 
-// void update() {
-// 	if (!mqttClient.connected()) {
-// 		connectToMQTT();
-// 	}
-// 	mqttClient.loop();
-// 	for(int i = 0; i < 4; i++) {
-// 		status[i] = analogRead(gates_in[i]);
-// 	}
-// }
+void mqtt_setup() {
+	mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+	mqttClient.setCallback(on_mqtt_message);	
+}
+
+void update() {
+	if (!mqttClient.connected()) {
+		connectToMQTT();
+	}
+	mqttClient.loop();
+	// for(int i = 0; i < 4; i++) {
+	// 	state[i] = analogRead(gates[i]);
+	// }
+}
 
 // void process() {
 // 	static String str = "";
@@ -114,31 +173,40 @@ const char* TOPIC = topic_str.c_str();
 // 		}
 // 	}
 // }
+
+//Ping to server for check alive
 void health_check() {
   static unsigned long last_time = 0;
-  if (millis() - last_time > time_check_health) {
-    last_time = millis();   // cập nhật thời gian để tránh spam liên tục
+  if (millis() - last_time > TIME_HEALTH_CHECK) {
+    last_time = millis();   // update new time
 
     if (WiFi.status() == WL_CONNECTED) {
-      WiFiClient client;
-      HTTPClient http;
+		WiFiClient client;
+		HTTPClient http;
+		String server_health_check = SERVER_URL + "/health-check";
+		http.begin(server_health_check);       
+		http.addHeader("Content-Type", "application/json");
 
-      http.begin(SERVER_URL);       
-      http.addHeader("Content-Type", "application/json");
+		StaticJsonDocument<200> doc;
+		doc["ESP_ID"] = HASHCODE;
+		for(int i = 0; i < DEVICE_LIMITS; i++) {
 
-      char payload[128];
-      snprintf(payload, sizeof(payload),
-               "{\"ID\":\"%s\",\"device_1\":%d}",
-               get_device_ID().c_str(), 100);
+			doc["state_device_" + String(i)] = String(state[i]);
+		}
+		String Json_data;
+		serializeJson(doc, Json_data);
+		Serial.println("JSON Data: " + Json_data); // In ra để debug
 
-      int http_code = http.POST(payload);
-      if (http_code > 0) {
-        Serial.printf("HTTP Response code: %d\n", http_code);
-        Serial.println(http.getString()); // server trả lời
-      } else {
-        Serial.printf("HTTP POST failed, code: %d\n", http_code);
-      }
-      http.end();
+		int http_response_code = http.POST(Json_data);
+		if (http_response_code > 0) {
+			String response = http.getString();
+			Serial.println("Response code: " + String(http_response_code));
+			Serial.println("Response: " + response);
+		} else {
+			Serial.print("Error code: ");
+			Serial.println(http_response_code);
+		}
+		http.end();
     }
   }
 }
@@ -148,14 +216,15 @@ void health_check() {
 void setup() {
 	Serial.begin(115200);
 	EEPROM.begin(EEPROM_SIZE);
-	gates_status_setup();
 	connect_to_WiFi();
-//	mqtt_setup();
+	create_topic();
+	gates_setup();
+	mqtt_setup();
 }
 
 
 void loop() {
-	//update();
+	update();
 	//process();
 	health_check();
 	//check_connection();

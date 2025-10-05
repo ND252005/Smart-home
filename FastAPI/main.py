@@ -6,6 +6,7 @@ import json
 from pydantic import BaseModel
 from typing import Optional
 from fastapi.encoders import jsonable_encoder
+import base64
 app = FastAPI()
 
 #device model
@@ -14,7 +15,8 @@ class Device(BaseModel):
     status: bool
     device_id: Optional[str] = uuid4().hex
 
-
+class esp(BaseModel):
+    esp_id = str
 
 DEVICE_FILE = "devices.json"
 DEVICE_DATABASE = []
@@ -61,3 +63,12 @@ async def get_device(device_id: str):
             return device
 
     raise HTTPException(404, f"{device_id} is not found")
+
+def encode_mac(mac: bytes) -> str:
+    if len(mac) != 6:
+        raise HTTPException(400, f"invalid mac {mac}")
+    encoded = base64.b64encode(mac).decode('ascii')
+    return encoded
+@app.get('/get-hash-code')
+async def get_mac(mac: str):
+    mac = encode_mac(mac)

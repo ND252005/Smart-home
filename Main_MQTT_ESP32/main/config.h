@@ -1,4 +1,4 @@
-#ifndef CONFIG_H
+    #ifndef CONFIG_H
 #define CONFIG_H
 
 #define verion "v1.0.0"
@@ -22,12 +22,10 @@
 #define verion "v1.0.0"
 
 //----------FastAPI Endpoint----------
-#define SERVER_URL "http://anhpn.ddns.net:8081"  
+String SERVER_URL = "http://192.168.79.24:8000";
 // ✅ Change this to match your API
 
 // Hashcode (can be static or changed later)
 #define DEVICE_HASHCODE "my_hash_123"
 
 #endif
-#ifndef CONFIG_H
-#define CONFIG_H
