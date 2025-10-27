@@ -24,11 +24,11 @@
 #define verion "v1.0.0"
 
 //----------FastAPI Endpoint----------
-#define SERVER_URL = "http://192.168.31.136:8000";
 // ✅ Change this to match your API
 
 // Hashcode (can be static or changed later)
 #define DEVICE_LIMITS 4
+extern String SERVER_URL;
 extern String DEVICE_HASHCODE;
 
 extern int gates[DEVICE_LIMITS];
