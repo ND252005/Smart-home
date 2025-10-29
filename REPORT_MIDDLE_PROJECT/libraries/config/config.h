@@ -23,16 +23,13 @@
 // ----------- Version code -----------
 #define verion "v1.0.0"
 
-//----------FastAPI Endpoint----------
-// ✅ Change this to match your API
-
-// Hashcode (can be static or changed later)
+// ----------- Device code -----------
 #define DEVICE_LIMITS 4
 extern String SERVER_URL;
 extern String DEVICE_HASHCODE;
 
 extern int gates[DEVICE_LIMITS];
 extern int state[DEVICE_LIMITS];
-
-
+//----------- API SETTNGS -----------
+#define PING_TIMEOUT 300000
 #endif

@@ -73,7 +73,7 @@ void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
     int recv_device_id = doc["device_id"];
     state[recv_device_id] = doc["state"];
     analogWrite(gates[recv_device_id], state[recv_device_id]);
-    if(instance) instance->PublishState(gates[recv_device_id], state[recv_device_id]);
+    if(instance) instance->PublishState(recv_device_id, state[recv_device_id]);
 }
 
 void MQTT::setHashcode(String hash) {

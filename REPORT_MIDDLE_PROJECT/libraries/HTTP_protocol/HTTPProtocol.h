@@ -9,7 +9,8 @@ class HTTPProtocol {
 public:
     HTTPProtocol();
     HTTPProtocol(const char* serverUrl);
-    bool postRegisterDevice(const String& device_name);
+    bool postRegisterESP(const String& device_name);
+    bool healthCheckESP();
     String getHashcode() const;
 
 private:
