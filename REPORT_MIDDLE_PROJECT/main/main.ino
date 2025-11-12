@@ -10,15 +10,21 @@
 MQTT* mqtt;
 HTTPProtocol* http;
 
-unsigned long prev_time = 0;
+unsigned long prev_time_health_check  	= 0;
+unsigned long prev_time_sensor_status 	= 0;
+unsigned long prev_time_control_status 	= 0;
 
 void setup() {
 	Serial.begin(115200);
 	//define pin out 
-	for(int i = 0; i < DEVICE_LIMITS; i++) {
+	for(int i = 0; i < DEVICE_CONTROL_LIMITS; i++) {
 		pinMode(gates[i], OUTPUT);
 	}
+	for(int i = 0; i < DEVICE_SENSOR_LIMITS; i++) {
+		pinMode(gates[i], INPUT);
+	}
 
+	//Define wifi used Wifimanager 
 	//WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   WiFiManager wm;
   if (!wm.autoConnect("ESP", "12345678")) {
@@ -42,7 +48,10 @@ void setup() {
 		Serial.print("Hashcode: ");
 		Serial.println(http->getHashcode());
 		DEVICE_HASHCODE = http->getHashcode();
-		prev_time = millis();
+		prev_time_health_check = millis();
+		prev_time_sensor_status = millis();
+		prev_time_control_status = millis();
+
 	} else {
 		Serial.println("Failed to register device");
 	}
@@ -58,9 +67,19 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 	if(mqtt) mqtt->loop();
-	if(prev_time && millis() - prev_time > PING_TIMEOUT) {
+	control_device_update();
+	if(prev_time_health_check && millis() - prev_time_health_check > PING_TIMEOUT) {
 		http->healthCheckESP();
 		prev_time = millis();
 	}
+	if(prev_time_sensor_status && millis() - prev_time_sensor_status > SENSOR_DATA_TIMEOUT) {
+		http->healthCheckESP();
+		prev_time = millis();
+	}
+}
 
+void control_device_update() {
+	for(int i = 0; i < DEVICE_SENSOR_LIMITS; i++) {
+		digitalRead()
+	}
 }

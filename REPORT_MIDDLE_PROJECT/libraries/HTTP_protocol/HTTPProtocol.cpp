@@ -85,7 +85,7 @@ bool HTTPProtocol::healthCheckESP() {
 
         if (resp_doc.containsKey("server")) {
             String server_state = resp_doc["server"].as<String>();
-            Serial.print("[HTTP] Received sever state: ");
+            Serial.print("[HTTP] Received sever state: ");  
             Serial.println(server_state);
             http.end();
             return true;
