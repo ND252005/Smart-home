@@ -14,6 +14,7 @@ class MQTT {
         String mqtt_hashcode = "";
         String topic_set;
         String topic_state;
+        String topic_sensor;
         String username;
         String password;
 
@@ -22,11 +23,13 @@ class MQTT {
 
         //được dùng để kiểm tra mqtt khai báo đúng cách chưa
         static MQTT* instance;
-        void PublishState(int gate_, int state_);
+
     public:
         MQTT();
         MQTT(String server, int port, String hashcode);
         void begin();
+        void PublishStateControl(int gate_, int state_);
+        void PublishStateSensor(int temperature, int humandity, int gas_detect);
         void loop();
         void reconnect();
         void setHashcode(String hash);

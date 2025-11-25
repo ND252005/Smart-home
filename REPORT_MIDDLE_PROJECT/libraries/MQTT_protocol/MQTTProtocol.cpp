@@ -6,12 +6,24 @@ MQTT::MQTT(String server, int port, String hashcode)
     : mqtt_server(server), mqtt_port(port), mqtt_hashcode(hashcode), client(espClient){
         topic_set = mqtt_hashcode + "/set";
         topic_state = mqtt_hashcode + "/state";
+        topic_sensor = mqtt_hashcode + "/sensor";
         instance = this;
     }
-void MQTT::PublishState(int gate_, int state_) {
+void MQTT::PublishStateControl(int gate_, int state_) {
     StaticJsonDocument<100> doc;
     doc["device_id"] = gate_;
     doc["state"] = state_;
+
+    char buffer[100];
+    serializeJson(doc, buffer);
+    client.publish(topic_state.c_str(), buffer);
+}
+
+void MQTT::PublishStateSensor(int temperature, int humandity, int gas_detect) {
+    StaticJsonDocument<100> doc;
+    doc["temperature"] = temperature;
+    doc["humandity"] = humandity;
+    doc["gas_detect"] = gas_detect;
 
     char buffer[100];
     serializeJson(doc, buffer);
@@ -77,11 +89,12 @@ void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
     int recv_device_id = doc["device_id"];
     state[recv_device_id] = doc["state"];
     analogWrite(gates[recv_device_id], state[recv_device_id]);
-    if(instance) instance->PublishState(recv_device_id, state[recv_device_id]);
+    if(instance) instance->PublishStateControl(recv_device_id, state[recv_device_id]);
 }
 
 void MQTT::setHashcode(String hash) {
     mqtt_hashcode = hash;
     topic_set = mqtt_hashcode + "/set";
     topic_state = mqtt_hashcode + "/state";
+    topic_sensor = mqtt_hashcode + "/sensor";
 }
