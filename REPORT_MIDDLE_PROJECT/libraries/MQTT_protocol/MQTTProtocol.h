@@ -12,8 +12,6 @@ class MQTT {
         String mqtt_server;
         int mqtt_port;
         String mqtt_hashcode = "";
-        String topic_set;
-        String topic_state;
         String topic_sensor;
         String username;
         String password;
@@ -28,7 +26,6 @@ class MQTT {
         MQTT();
         MQTT(String server, int port, String hashcode);
         void begin();
-        void PublishStateControl(int gate_, int state_);
         void PublishStateSensor(int temperature, int humandity, int gas_detect);
         void loop();
         void reconnect();

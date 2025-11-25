@@ -6,9 +6,15 @@
 #include <ArduinoJson.h>
 #include <config.h>
 #include <MQTTProtocol.h>
+#include "DHT.h"
 
 MQTT* mqtt;
 HTTPProtocol* http;
+
+#define DHTTYPE DHT11
+
+#define DHT_PIN 4     // Digital pin connected to the DHT sensor
+#define MQ2_PIN 35    //detect gas sensor
 
 unsigned long prev_time_health_check  	= 0;
 unsigned long prev_time_sensor_status 	= 0;

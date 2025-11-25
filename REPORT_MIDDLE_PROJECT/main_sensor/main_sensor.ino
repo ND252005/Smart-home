@@ -7,6 +7,10 @@
 #include <config.h>
 #include <MQTTProtocol.h>
 #include "DHT.h"
+#include <TFT_eSPI.h>
+
+TFT_eSPI tft = TFT_eSPI();
+#include "Dashboard.h"
 
 MQTT* mqtt;
 HTTPProtocol* http;
@@ -16,24 +20,35 @@ HTTPProtocol* http;
 #define DHT_PIN 4     // Digital pin connected to the DHT sensor
 #define MQ2_PIN 35    //detect gas sensor
 
-DHT dht(DHTPIN, DHTTYPE); //khai báo thư viện dht
+DHT dht(DHT_PIN, DHTTYPE); //khai báo thư viện dht
 
 
-const int GAS_THRESHOLD_ALARM = 1200; //mức gas cảnh báo
-const int GAS_THRESHOLD_DANGER = 2500; //mức gas báo động
+// const int GAS_THRESHOLD_ALARM = 1200; //mức gas cảnh báo
+// const int GAS_THRESHOLD_DANGER = 2500; //mức gas báo động
+
+
 
 unsigned long prev_time_sensor_status  	= 0;
+unsigned long prev_time_healthcheck  	= 0;
 
 void setup() {
+
 	Serial.begin(115200);
-	//define pin out 
-  	pinMode(MQ2_PIN, INPUT);
+
+	// Khởi động màn hình
+	tft.init();
+	tft.setRotation(1); // Xoay ngang (Landscape)
+	
+	// Vẽ khung giao diện (Chỉ gọi 1 lần)
+	drawDashboardInterface();
+
+	pinMode(MQ2_PIN, INPUT);
 	dht.begin();
 
 	//Define wifi used Wifimanager 
 	//WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 	WiFiManager wm;
-	if (!wm.autoConnect("ESP_sensor", "12345678")) {
+	if (!wm.autoConnect(WIFI_SSID_AP, WIFI_PASSWORD_AP)) {
 		Serial.println("Connected is not successful, esp will restart...");
 		delay(3000);
 		ESP.restart();
@@ -55,10 +70,11 @@ void setup() {
 		Serial.println(http->getHashcode());
 		DEVICE_HASHCODE = http->getHashcode();
 		prev_time_sensor_status = millis();
+		prev_time_healthcheck = millis();
 	} else {
 		Serial.println("Failed to register device");
 	}
-	if(DEVICE_HASHCODE != "" ) {
+	if(DEVICE_HASHCODE != "") {
 	 delay(1000);
 		mqtt = new MQTT(MQTT_HOST, MQTT_PORT, DEVICE_HASHCODE);
 		mqtt->setCredentials(MQTT_USER, MQTT_PASSWORD);
@@ -68,13 +84,24 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+
 	if(mqtt) mqtt->loop();
-	control_device_update();
 
 	if(prev_time_sensor_status && millis() - prev_time_sensor_status > SENSOR_DATA_TIMEOUT) {
-		http->healthCheckESP();
-		prev_time = millis();
+		readSensor();
+		prev_time_sensor_status = millis();
 	}
+	if(prev_time_healthcheck && millis() - prev_time_healthcheck > PING_TIMEOUT) {
+		http->healthCheckESP();
+		prev_time_healthcheck = millis();
+	}
+}
+
+void readSensor() {
+	int gas_dectect = analogRead(MQ2_PIN);
+	int humidity = dht.readHumidity();
+	int temperature = dht.readTemperature();
+	updateDashboard(temperature, humidity, gas_dectect);
+	mqtt->PublishStateSensor(temperature, humidity, gas_dectect);
 }
 

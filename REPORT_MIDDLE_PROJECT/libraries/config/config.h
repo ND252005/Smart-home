@@ -9,7 +9,7 @@
 #define WIFI_SSID       "B5-P5.14"
 #define WIFI_PASSWORD   "66668888"
 
-#define WIFI_SSID_AP       "ESP_AP"
+#define WIFI_SSID_AP       "ESP32_sensor"
 #define WIFI_PASSWORD_AP   "12345678"
 #define TRY_CONNECT_TIMEOUT 300
 
@@ -24,14 +24,10 @@
 #define verion "v1.0.0"
 
 // ----------- Device code -----------
-#define DEVICE_CONTROL_LIMITS 4
-#define DEVICE_SENSOR_LIMITS 2
 extern String SERVER_URL;
 extern String DEVICE_HASHCODE;
 
-extern int gates[DEVICE_CONTROL_LIMITS];
-extern int state[DEVICE_CONTROL_LIMITS];
 //----------- API SETTNGS -----------
 #define PING_TIMEOUT            300000
-#define SENSOR_DATA_TIMEOUT     300000
+#define SENSOR_DATA_TIMEOUT     5000
 #endif

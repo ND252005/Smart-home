@@ -11,7 +11,7 @@ bool HTTPProtocol::postRegisterESP(const String& device_name) {
     }
 
     HTTPClient http;
-    http.begin(server_url + "/api/device/register");
+    http.begin(server_url + "/api/sensor/register");
     http.addHeader("Content-Type", "application/json");
 
     StaticJsonDocument<200> doc;
@@ -60,7 +60,7 @@ bool HTTPProtocol::healthCheckESP() {
     }
 
     HTTPClient http;
-    http.begin(server_url + "/api/device/health-check");
+    http.begin(server_url + "/api/sensor/health-check");
 
     StaticJsonDocument<200> doc;
     doc["health_check"] = hashcode;
