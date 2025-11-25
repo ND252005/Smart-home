@@ -24,12 +24,14 @@
 #define verion "v1.0.0"
 
 // ----------- Device code -----------
-#define DEVICE_LIMITS 4
+#define DEVICE_CONTROL_LIMITS 4
+#define DEVICE_SENSOR_LIMITS 2
 extern String SERVER_URL;
 extern String DEVICE_HASHCODE;
 
-extern int gates[DEVICE_LIMITS];
-extern int state[DEVICE_LIMITS];
+extern int gates[DEVICE_CONTROL_LIMITS];
+extern int state[DEVICE_CONTROL_LIMITS];
 //----------- API SETTNGS -----------
-#define PING_TIMEOUT 300000
+#define PING_TIMEOUT            300000
+#define SENSOR_DATA_TIMEOUT     300000
 #endif

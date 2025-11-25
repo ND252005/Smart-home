@@ -17,6 +17,7 @@ void MQTT::PublishState(int gate_, int state_) {
     serializeJson(doc, buffer);
     client.publish(topic_state.c_str(), buffer);
 }
+
 void MQTT::begin() {
     client.setServer(mqtt_server.c_str(), mqtt_port);
     client.setCallback(MQTT::MQTTCallBack);
@@ -33,11 +34,13 @@ void MQTT::begin() {
         }
     }
 }
+
 void MQTT::loop() {
     if (WiFi.status() != WL_CONNECTED) return;
     if (!client.connected()) reconnect();
     client.loop();
 }
+
 void MQTT::reconnect() {
     Serial.print("Connecting to MQTT...");
 
@@ -53,6 +56,7 @@ void MQTT::reconnect() {
             Serial.println(" try again in 5 seconds");
     }
 }
+
 void MQTT::setCredentials(const String& user, const String& pass) {
     username = user;
     password = pass;
