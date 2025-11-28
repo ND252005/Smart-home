@@ -4,7 +4,7 @@ MQTT* MQTT::instance = nullptr;
 MQTT :: MQTT(){}
 MQTT::MQTT(String server, int port) 
     : mqtt_server(server), mqtt_port(port), client(espClient){
-        topic_sensor = HASHCODE + "/sensor";
+        topic_control = HASHCODE + "/control";
         topic_ping = HASHCODE + "/ping";
         instance = this;
     }
@@ -31,16 +31,14 @@ void MQTT::Ping2Server() {
     client.publish(topic_ping.c_str(), buffer.c_str());
 }
 
-
-void MQTT::PublishStateSensor(int temperature, int humandity, int gas_detect) {
+void MQTT::PublishStateController(int gate_, int state_) {
     StaticJsonDocument<100> doc;
-    doc["temperature"] = temperature;
-    doc["humidity"] = humandity;
-    doc["gas_detect"] = gas_detect;
+    doc["device_id"] = gate_;
+    doc["state"] = state_;
 
     char buffer[100];
     serializeJson(doc, buffer);
-    client.publish(topic_sensor.c_str(), buffer);
+    client.publish(topic_state.c_str(), buffer);
 }
 
 void MQTT::loop() {
@@ -73,6 +71,11 @@ void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
     for (unsigned int i = 0; i < length; i++) msg += (char)payload[i];
     msg.trim();
     Serial.println(msg);
+
+    int recv_device_id = doc["device_id"];
+    state = doc["state"];
+    
+    digitalWrite(device_pin[recv_device_id], state);
 
     StaticJsonDocument<100> doc;
     DeserializationError err = deserializeJson(doc, msg);

@@ -26,6 +26,10 @@
 // ----------- Device code -----------
 extern String SERVER_URL;
 extern String HASHCODE;
+extern int device_pin[2];
+extern int read_pin[2];
+#define DEVICE_CONTROL_LIMITS 2
+#define SAMPLE_TIMEOUT 1000
 
 //----------- API SETTNGS -----------
 #define PING_TIMEOUT            300000
