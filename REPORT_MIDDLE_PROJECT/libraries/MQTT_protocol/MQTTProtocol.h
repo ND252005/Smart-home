@@ -11,9 +11,8 @@ class MQTT {
     private:
         String mqtt_server;
         int mqtt_port;
-        String mqtt_hashcode = "";
-        String topic_set;
-        String topic_state;
+        String topic_sensor;
+        String topic_ping;
         String username;
         String password;
 
@@ -22,14 +21,16 @@ class MQTT {
 
         //được dùng để kiểm tra mqtt khai báo đúng cách chưa
         static MQTT* instance;
-        void PublishState(int gate_, int state_);
+
     public:
         MQTT();
-        MQTT(String server, int port, String hashcode);
+        MQTT(String server, int port);
         void begin();
+        void PublishStateSensor(int temperature, int humandity, int gas_detect);
         void loop();
         void reconnect();
-        void setHashcode(String hash);
+        // void setHashcode(String hash);
+        void Ping2Server();
         void setCredentials(const String& user, const String& pass);
         static void MQTTCallBack(char* topic, byte* payload, unsigned int length);
 };

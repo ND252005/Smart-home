@@ -2,21 +2,12 @@
 
 MQTT* MQTT::instance = nullptr;
 MQTT :: MQTT(){}
-MQTT::MQTT(String server, int port, String hashcode) 
-    : mqtt_server(server), mqtt_port(port), mqtt_hashcode(hashcode), client(espClient){
-        topic_set = mqtt_hashcode + "/set";
-        topic_state = mqtt_hashcode + "/state";
+MQTT::MQTT(String server, int port) 
+    : mqtt_server(server), mqtt_port(port), client(espClient){
+        topic_sensor = HASHCODE + "/sensor";
+        topic_ping = HASHCODE + "/ping";
         instance = this;
     }
-void MQTT::PublishState(int gate_, int state_) {
-    StaticJsonDocument<100> doc;
-    doc["device_id"] = gate_;
-    doc["state"] = state_;
-
-    char buffer[100];
-    serializeJson(doc, buffer);
-    client.publish(topic_state.c_str(), buffer);
-}
 
 void MQTT::begin() {
     client.setServer(mqtt_server.c_str(), mqtt_port);
@@ -25,7 +16,7 @@ void MQTT::begin() {
     while (!client.connected()) {
         if (client.connect("ESP32Client", username.c_str(), password.c_str())) {
             Serial.println("connected");
-            client.subscribe(topic_set.c_str());
+            // client.subscribe(topic_set.c_str());
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
@@ -33,6 +24,23 @@ void MQTT::begin() {
             delay(5000);
         }
     }
+}
+
+void MQTT::Ping2Server() {
+    String buffer = "alive";
+    client.publish(topic_ping.c_str(), buffer.c_str());
+}
+
+
+void MQTT::PublishStateSensor(int temperature, int humandity, int gas_detect) {
+    StaticJsonDocument<100> doc;
+    doc["temperature"] = temperature;
+    doc["humidity"] = humandity;
+    doc["gas_detect"] = gas_detect;
+
+    char buffer[100];
+    serializeJson(doc, buffer);
+    client.publish(topic_sensor.c_str(), buffer);
 }
 
 void MQTT::loop() {
@@ -48,9 +56,7 @@ void MQTT::reconnect() {
     if (millis() - lastAttempt < 5000) return;  // tránh spam connect
     lastAttempt = millis();
 
-    if (client.connect(MQTT_CLIENT_ID, username.c_str(), password.c_str())) {
-        client.subscribe(topic_set.c_str());
-    } else {
+    if (!client.connect(MQTT_CLIENT_ID, username.c_str(), password.c_str())) {
             Serial.print("failed, rc=");
             Serial.print(client.state());
             Serial.println(" try again in 5 seconds");
@@ -74,14 +80,9 @@ void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
         Serial.println("JSON parse error");
         return;
     }
-    int recv_device_id = doc["device_id"];
-    state[recv_device_id] = doc["state"];
-    analogWrite(gates[recv_device_id], state[recv_device_id]);
-    if(instance) instance->PublishState(recv_device_id, state[recv_device_id]);
 }
 
-void MQTT::setHashcode(String hash) {
-    mqtt_hashcode = hash;
-    topic_set = mqtt_hashcode + "/set";
-    topic_state = mqtt_hashcode + "/state";
-}
+// void MQTT::setHashcode(String hash) {
+//     mqtt_hashcode = hash;
+//     topic_sensor = mqtt_hashcode + "/sensor";
+// }
