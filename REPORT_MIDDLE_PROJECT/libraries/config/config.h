@@ -25,7 +25,7 @@
 
 // ----------- Device code -----------
 extern String SERVER_URL;
-extern String DEVICE_HASHCODE;
+extern String HASHCODE;
 
 //----------- API SETTNGS -----------
 #define PING_TIMEOUT            300000

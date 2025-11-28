@@ -2,9 +2,10 @@
 
 MQTT* MQTT::instance = nullptr;
 MQTT :: MQTT(){}
-MQTT::MQTT(String server, int port, String hashcode) 
-    : mqtt_server(server), mqtt_port(port), mqtt_hashcode(hashcode), client(espClient){
-        topic_sensor = mqtt_hashcode + "/sensor";
+MQTT::MQTT(String server, int port) 
+    : mqtt_server(server), mqtt_port(port), client(espClient){
+        topic_sensor = HASHCODE + "/sensor";
+        topic_ping = HASHCODE + "/ping";
         instance = this;
     }
 
@@ -24,6 +25,12 @@ void MQTT::begin() {
         }
     }
 }
+
+void MQTT::Ping2Server() {
+    String buffer = "alive";
+    client.publish(topic_ping.c_str(), buffer.c_str());
+}
+
 
 void MQTT::PublishStateSensor(int temperature, int humandity, int gas_detect) {
     StaticJsonDocument<100> doc;
@@ -75,7 +82,7 @@ void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
     }
 }
 
-void MQTT::setHashcode(String hash) {
-    mqtt_hashcode = hash;
-    topic_sensor = mqtt_hashcode + "/sensor";
-}
+// void MQTT::setHashcode(String hash) {
+//     mqtt_hashcode = hash;
+//     topic_sensor = mqtt_hashcode + "/sensor";
+// }

@@ -2,7 +2,7 @@
 #include <WiFiManager.h>
 //#include <WiFiUdp.h>
 //#include <EEPROM.h>
-#include <HTTPProtocol.h>
+// #include <HTTPProtocol.h>
 #include <ArduinoJson.h>
 #include <config.h>
 #include <MQTTProtocol.h>
@@ -13,7 +13,7 @@ TFT_eSPI tft = TFT_eSPI();
 #include "Dashboard.h"
 
 MQTT* mqtt;
-HTTPProtocol* http;
+// HTTPProtocol* http;
 
 #define DHTTYPE DHT11
 
@@ -61,26 +61,26 @@ void setup() {
 		Serial.print(".");
 	}
 
-	http = new HTTPProtocol(SERVER_URL.c_str());
+	// http = new HTTPProtocol(SERVER_URL.c_str());
 
-	String esp_name = WiFi.macAddress();
-	if (http->postRegisterESP(esp_name)) {
-		Serial.println("Device registered successfully!");
-		Serial.print("Hashcode: ");
-		Serial.println(http->getHashcode());
-		DEVICE_HASHCODE = http->getHashcode();
-		prev_time_sensor_status = millis();
-		prev_time_healthcheck = millis();
-	} else {
-		Serial.println("Failed to register device");
-	}
-	if(DEVICE_HASHCODE != "") {
-	 delay(1000);
-		mqtt = new MQTT(MQTT_HOST, MQTT_PORT, DEVICE_HASHCODE);
+	// String esp_name = WiFi.macAddress();
+	// if (http->postRegisterESP(esp_name)) {
+	// 	Serial.println("Device registered successfully!");
+	// 	Serial.print("Hashcode: ");
+	// 	Serial.println(http->getHashcode());
+	// 	DEVICE_HASHCODE = http->getHashcode();
+	// prev_time_sensor_status = millis();
+	// prev_time_healthcheck = millis();
+	// } else {
+	// 	Serial.println("Failed to register device");
+	// }
+	prev_time_sensor_status = millis();
+	prev_time_healthcheck = millis();
+
+	 	delay(1000);
+		mqtt = new MQTT(MQTT_HOST, MQTT_PORT);
 		mqtt->setCredentials(MQTT_USER, MQTT_PASSWORD);
 		mqtt->begin();
-	}
-
 }
 
 void loop() {
@@ -92,7 +92,7 @@ void loop() {
 		prev_time_sensor_status = millis();
 	}
 	if(prev_time_healthcheck && millis() - prev_time_healthcheck > PING_TIMEOUT) {
-		http->healthCheckESP();
+		mqtt->Ping2Server();
 		prev_time_healthcheck = millis();
 	}
 }
