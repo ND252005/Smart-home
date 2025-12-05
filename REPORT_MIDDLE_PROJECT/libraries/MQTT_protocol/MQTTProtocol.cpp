@@ -4,8 +4,8 @@ MQTT* MQTT::instance = nullptr;
 MQTT :: MQTT(){}
 MQTT::MQTT(String server, int port) 
     : mqtt_server(server), mqtt_port(port), client(espClient){
-        topic_control = HASHCODE + "/control";
-        topic_ping = HASHCODE + "/ping";
+        topic_state = HASHCODE + "/state";
+        topic_set = HASHCODE + "/set";
         instance = this;
     }
 
@@ -16,7 +16,7 @@ void MQTT::begin() {
     while (!client.connected()) {
         if (client.connect("ESP32Client", username.c_str(), password.c_str())) {
             Serial.println("connected");
-            // client.subscribe(topic_set.c_str());
+            client.subscribe(topic_set.c_str());
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
@@ -26,16 +26,10 @@ void MQTT::begin() {
     }
 }
 
-void MQTT::Ping2Server() {
-    String buffer = "alive";
-    client.publish(topic_ping.c_str(), buffer.c_str());
-}
-
-void MQTT::PublishStateController(int gate_, int state_) {
+void MQTT::PublishStateController(String name_device_1, int state_1, String name_device_2, int state_2) {
     StaticJsonDocument<100> doc;
-    doc["device_id"] = gate_;
-    doc["state"] = state_;
-
+    doc[name_device_1] = state_1;
+    doc[name_device_2] = state_2;
     char buffer[100];
     serializeJson(doc, buffer);
     client.publish(topic_state.c_str(), buffer);
@@ -65,27 +59,26 @@ void MQTT::setCredentials(const String& user, const String& pass) {
     username = user;
     password = pass;
 }
-
+//esp nghe topic state
 void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
     String msg;
     for (unsigned int i = 0; i < length; i++) msg += (char)payload[i];
     msg.trim();
     Serial.println(msg);
 
-    int recv_device_id = doc["device_id"];
-    state = doc["state"];
-    
-    digitalWrite(device_pin[recv_device_id], state);
-
-    StaticJsonDocument<100> doc;
+    JsonDocument doc;
     DeserializationError err = deserializeJson(doc, msg);
     if (err) {
         Serial.println("JSON parse error");
         return;
     }
-}
 
-// void MQTT::setHashcode(String hash) {
-//     mqtt_hashcode = hash;
-//     topic_sensor = mqtt_hashcode + "/sensor";
-// }
+    JsonObject root = doc.as<JsonObject>();
+
+    for (JsonPair kv : root) {
+        String deviceName   = String(kv.key().c_str());
+        int deviceState     = kv.value().as<int>(); 
+        if(deviceName == "device_1")        digitalWrite(device_pin[0], deviceState);
+        else if(deviceName == "device_2")   digitalWrite(device_pin[1], deviceState);
+    }
+}

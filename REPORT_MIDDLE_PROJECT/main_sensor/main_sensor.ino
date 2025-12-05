@@ -45,8 +45,6 @@ void setup() {
 	pinMode(MQ2_PIN, INPUT);
 	dht.begin();
 
-	//Define wifi used Wifimanager 
-	//WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 	WiFiManager wm;
 	if (!wm.autoConnect(WIFI_SSID_AP, WIFI_PASSWORD_AP)) {
 		Serial.println("Connected is not successful, esp will restart...");
@@ -61,19 +59,7 @@ void setup() {
 		Serial.print(".");
 	}
 
-	// http = new HTTPProtocol(SERVER_URL.c_str());
 
-	// String esp_name = WiFi.macAddress();
-	// if (http->postRegisterESP(esp_name)) {
-	// 	Serial.println("Device registered successfully!");
-	// 	Serial.print("Hashcode: ");
-	// 	Serial.println(http->getHashcode());
-	// 	DEVICE_HASHCODE = http->getHashcode();
-	// prev_time_sensor_status = millis();
-	// prev_time_healthcheck = millis();
-	// } else {
-	// 	Serial.println("Failed to register device");
-	// }
 	prev_time_sensor_status = millis();
 	prev_time_healthcheck = millis();
 

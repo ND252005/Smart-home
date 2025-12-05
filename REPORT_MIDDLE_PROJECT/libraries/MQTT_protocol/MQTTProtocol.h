@@ -11,8 +11,8 @@ class MQTT {
     private:
         String mqtt_server;
         int mqtt_port;
-        String topic_control;
-        String topic_ping;
+        String topic_set;
+        String topic_state;
         String username;
         String password;
 
@@ -26,11 +26,11 @@ class MQTT {
         MQTT();
         MQTT(String server, int port);
         void begin();
-        void PublishStateController(int gate_, int state_);
+        void PublishStateController(String name_device_1, int state_1, String name_device_2, int state_2);
         void loop();
         void reconnect();
         // void setHashcode(String hash);
-        void Ping2Server();
+        // void Ping2Server();
         void setCredentials(const String& user, const String& pass);
         static void MQTTCallBack(char* topic, byte* payload, unsigned int length);
 };

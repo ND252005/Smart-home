@@ -15,18 +15,20 @@ HTTPProtocol* http;
 
 // --- BIẾN TOÀN CỤC ---
 //Biến thời gian 
-unsigned long prev_time_control_status 	= 0;
-unsigned long prev_time_healthcheck  	= 0;
+unsigned long last_time_control_status 	= 0;
+unsigned long last_time_healthcheck  	= 0;
 
 // Biến đếm trong ngắt (volatile)
 volatile unsigned long changeCount1 = 0; 
 volatile unsigned long changeCount2 = 0; 
 
 // Biến lưu tần số hiển thị
-unsigned long lastFrequency1 = 0; 
-unsigned long lastFrequency2 = 0;
+bool last_state_1 = 0; 
+bool last_state_2 = 0;
 
-unsigned long lastTime = 0;             
+bool current_state_1 = 0; 
+bool current_state_2 = 0;
+
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; 
 
 // --- HÀM NGẮT (ISR) ---
@@ -49,11 +51,11 @@ void setup() {
 	}
 // --- SETUP KÊNH 1 ---
   attachInterrupt(digitalPinToInterrupt(read_pin[0]), onChange1, RISING);
-  digitalWrite(pinRelay1, LOW); 
+//   digitalWrite(pinRelay1, LOW); 
 
   // --- SETUP KÊNH 2 ---
   attachInterrupt(digitalPinToInterrupt(read_pin[1]), onChange2, RISING);
-  digitalWrite(pinRelay2, LOW);
+//   digitalWrite(pinRelay2, LOW);
 
 	//Define wifi used Wifimanager 
 	//WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -71,9 +73,6 @@ void setup() {
 		Serial.print(".");
 	}
 
-	prev_time_sensor_status = millis();
-	prev_time_healthcheck = millis();
-
 	 	delay(1000);
 		mqtt = new MQTT(MQTT_HOST, MQTT_PORT);
 		mqtt->setCredentials(MQTT_USER, MQTT_PASSWORD);
@@ -84,13 +83,15 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 	if(mqtt) mqtt->loop();
-	if(millis - lastTime > SAMPLE_TIMEOUT) {
+	if(millis() - last_time_control_status > SAMPLE_TIMEOUT) {
 		control_device_update();
+		last_time_control_status = millis();
 	}
-	if(prev_time_health_check && millis() - prev_time_health_check > PING_TIMEOUT) {
-		mqtt->Ping2Server();
-		prev_time = millis();
+	if(millis() - last_time_healthcheck > PING_TIMEOUT) {
+		mqtt->PublishStateController("device_1", current_state_1, "device_2", current_state_2);
+		last_time_healthcheck = millis();
 	}
+
 }
 
 void control_device_update() {
@@ -99,9 +100,12 @@ void control_device_update() {
     unsigned long count2 = changeCount2; changeCount2 = 0;
     portEXIT_CRITICAL(&mux);
 	
+	current_state_1 = (count1>100) ? true : false;
+	current_state_2 = (count2>100) ? true : false;
 	
-	if(count1 > 100) mqtt-> PublishStateController()
-
-	lastFrequency1 = count1;
-    lastFrequency2 = count2;
+	if(last_state_1 != current_state_1 or last_state_2 != current_state_2) {
+		mqtt->PublishStateController("device_1", current_state_1, "device_2", current_state_2);
+		last_state_1 = current_state_1;
+		last_state_2 = current_state_2;
+	}
 }
