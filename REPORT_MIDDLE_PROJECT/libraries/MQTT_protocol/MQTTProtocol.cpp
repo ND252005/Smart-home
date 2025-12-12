@@ -26,7 +26,7 @@ void MQTT::begin() {
     }
 }
 
-void MQTT::PublishStateController(String name_device_1, int state_1, String name_device_2, int state_2) {
+void MQTT::PublishStateController(String name_device_1, bool state_1, String name_device_2, bool state_2) {
     StaticJsonDocument<100> doc;
     doc[name_device_1] = state_1;
     doc[name_device_2] = state_2;
@@ -79,29 +79,21 @@ void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
         String deviceName = String(kv.key().c_str());
         if (deviceName.startsWith("device_")) {
             int id = deviceName.substring(7).toInt();
-        String msg = String(kv.value().c_str());
+            String msg = kv.value().as<String>();
             if (msg = "toggle") {
                 switch (id) {
                     case 1:{
-
-                        int toggle_status_1 = (read_pin[0] > 100) ? LOW : HIGH; 
-                        digitalWrite(device_pin[0], toggle_status_1);
+                        digitalWrite(device_pin[0], !digitalRead(device_pin[0]));
                         Serial.println("Da lat trang thai Device 1");
                         break;
                     }
 
-
                     case 2:{
-                        int toggle_status_2 = (read_pin[1] > 100) ? LOW : HIGH;     
-                        digitalWrite(device_pin[1], toggle_status_2);
+                        bool toggle_status_2 = !state_device[1];     
+                        digitalWrite(device_pin[1], !digitalRead(device_pin[1]));
                         Serial.println("Da lat trang thai Device 2");
                         break;
                     }
-
-                    
-                    case 3:
-                        // digitalWrite(device_pin[2], !digitalRead(device_pin[2]));
-                        break;
 
                     default:
                         Serial.println("ID thiet bi khong ton tai");

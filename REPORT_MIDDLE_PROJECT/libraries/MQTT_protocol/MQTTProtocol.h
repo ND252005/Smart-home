@@ -27,7 +27,7 @@ class MQTT {
         MQTT();
         MQTT(String server, int port);
         void begin();
-        void PublishStateController(String name_device_1, int state_1, String name_device_2, int state_2);
+        void PublishStateController(String name_device_1, bool state_1, String name_device_2, bool state_2);
         void loop();
         void reconnect();
         // void setHashcode(String hash);

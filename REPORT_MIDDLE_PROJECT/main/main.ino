@@ -23,11 +23,8 @@ volatile unsigned long changeCount1 = 0;
 volatile unsigned long changeCount2 = 0; 
 
 // Biến lưu tần số hiển thị
-bool last_state_1 = 0; 
-bool last_state_2 = 0;
-
-bool current_state_1 = 0; 
-bool current_state_2 = 0;
+bool last_state_1 = false; 
+bool last_state_2 = false;
 
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; 
 
@@ -60,7 +57,7 @@ void setup() {
 	//Define wifi used Wifimanager 
 	//WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   WiFiManager wm;
-  if (!wm.autoConnect("ESP", "12345678")) {
+  if (!wm.autoConnect("ESP_CONTROL", "12345678")) {
     Serial.println("Connected is not successful, esp will restart...");
     delay(3000);
     ESP.restart();
@@ -88,7 +85,7 @@ void loop() {
 		last_time_control_status = millis();
 	}
 	if(millis() - last_time_healthcheck > PING_TIMEOUT) {
-		mqtt->PublishStateController("device_1", current_state_1, "device_2", current_state_2);
+		mqtt->PublishStateController("device_1", state_device[0], "device_2", state_device[1]);
 		last_time_healthcheck = millis();
 	}
 
@@ -98,14 +95,14 @@ void control_device_update() {
 	portENTER_CRITICAL(&mux);
     unsigned long count1 = changeCount1; changeCount1 = 0;
     unsigned long count2 = changeCount2; changeCount2 = 0;
-    portEXIT_CRITICAL(&mux);
+  portEXIT_CRITICAL(&mux);
 	
-	current_state_1 = (count1>100) ? true : false;
-	current_state_2 = (count2>100) ? true : false;
+	state_device[0] = (count1>100) ? true : false;
+	state_device[1] = (count2>100) ? true : false;
 	
-	if(last_state_1 != current_state_1 or last_state_2 != current_state_2) {
-		mqtt->PublishStateController("device_1", current_state_1, "device_2", current_state_2);
-		last_state_1 = current_state_1;
-		last_state_2 = current_state_2;
+	if(last_state_1 != state_device[0] || last_state_2 != state_device[1]) {
+		mqtt->PublishStateController("device_1", state_device[0], "device_2", state_device[1]);
+		last_state_1 = state_device[0];
+		last_state_2 = state_device[1];
 	}
 }

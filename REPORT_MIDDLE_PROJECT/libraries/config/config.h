@@ -28,6 +28,7 @@ extern String SERVER_URL;
 extern String HASHCODE;
 extern int device_pin[2];
 extern int read_pin[2];
+extern bool state_device[2];
 #define DEVICE_CONTROL_LIMITS 2
 #define SAMPLE_TIMEOUT 1000
 
