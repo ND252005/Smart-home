@@ -46,7 +46,7 @@ void setup() {
 	Serial.begin(115200);
 	//define pin out 
 	for(int i = 0; i < DEVICE_CONTROL_LIMITS; i++) {
-		pinMode(device_pin[i], INPUT);
+		pinMode(device_pin[i], OUTPUT);
 		pinMode(read_pin[i], INPUT);
 	}
 // --- SETUP KÊNH 1 ---

@@ -15,6 +15,7 @@ class MQTT {
         String topic_state;
         String username;
         String password;
+    
 
         WiFiClient espClient;
         PubSubClient client{espClient};

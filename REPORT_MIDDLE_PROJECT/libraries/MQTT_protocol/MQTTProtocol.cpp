@@ -76,9 +76,38 @@ void MQTT::MQTTCallBack(char* topic, byte* payload, unsigned int length) {
     JsonObject root = doc.as<JsonObject>();
 
     for (JsonPair kv : root) {
-        String deviceName   = String(kv.key().c_str());
-        int deviceState     = kv.value().as<int>(); 
-        if(deviceName == "device_1")        digitalWrite(device_pin[0], deviceState);
-        else if(deviceName == "device_2")   digitalWrite(device_pin[1], deviceState);
+        String deviceName = String(kv.key().c_str());
+        if (deviceName.startsWith("device_")) {
+            int id = deviceName.substring(7).toInt();
+        String msg = String(kv.value().c_str());
+            if (msg = "toggle") {
+                switch (id) {
+                    case 1:{
+
+                        int toggle_status_1 = (read_pin[0] > 100) ? LOW : HIGH; 
+                        digitalWrite(device_pin[0], toggle_status_1);
+                        Serial.println("Da lat trang thai Device 1");
+                        break;
+                    }
+
+
+                    case 2:{
+                        int toggle_status_2 = (read_pin[1] > 100) ? LOW : HIGH;     
+                        digitalWrite(device_pin[1], toggle_status_2);
+                        Serial.println("Da lat trang thai Device 2");
+                        break;
+                    }
+
+                    
+                    case 3:
+                        // digitalWrite(device_pin[2], !digitalRead(device_pin[2]));
+                        break;
+
+                    default:
+                        Serial.println("ID thiet bi khong ton tai");
+                        break;
+                }
+            }
+        }
     }
 }
